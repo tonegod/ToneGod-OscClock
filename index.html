@@ -93,6 +93,7 @@ dialog::backdrop{background:#000a}
         <button data-v="hm">時:分</button><button data-v="hms">時:分:秒</button><button data-v="analog">指針</button><button data-v="hybrid">指針＋數字</button>
       </div>
       <div class="row" style="margin-top:6px"><label class="chk"><input type="checkbox" id="h12">12 小時制</label><label class="chk"><input type="checkbox" id="rail">底線連續路徑</label></div>
+      <input id="txt" maxlength="24" placeholder="自訂文字（英文、數字、- . / ! + ?）" style="margin-top:8px;width:100%;font:inherit;font-size:13px;color:var(--tx);background:#14112a;border:1px solid var(--line);padding:7px 10px">
     </div>
 
     <div class="grp"><h3>TYPEFACE</h3>
@@ -145,7 +146,7 @@ dialog::backdrop{background:#000a}
 <script>
 const $=id=>document.getElementById(id);
 // ================= settings =================
-const DEF={form:"hm",font:"seg",h12:false,rail:true,amp:.5,rate:30,auto:false,ax:0,ay:0,az:0,sx:0,sy:0,sz:0,pp:.3,dp:0,col:"#39ff88",glow:10,decay:.3,swap:false,invX:false,invY:false,sink:"",chX:0,chY:1,sr:0,lat:"interactive",mute:false,mini:false};
+const DEF={form:"hm",font:"seg",h12:false,rail:true,amp:.5,rate:30,auto:false,ax:0,ay:0,az:0,sx:0,sy:0,sz:0,pp:.3,dp:0,col:"#39ff88",glow:10,decay:.3,swap:false,invX:false,invY:false,sink:"",chX:0,chY:1,sr:0,lat:"interactive",mute:false,mini:false,txt:""};
 let S={...DEF};try{Object.assign(S,JSON.parse(localStorage.getItem("oscchrono")||"{}"))}catch(e){}
 const save=()=>{try{localStorage.setItem("oscchrono",JSON.stringify(S))}catch(e){}};
 
@@ -183,6 +184,7 @@ function mxGlyph(d){const out=[],bx=.125,by=1/6;
 const FONTS={led:{g:ledGlyph,sl:.1},matrix:{g:mxGlyph,sl:0},seg:{g:segGlyph,sl:0},ital:{g:segGlyph,sl:.14},round:{g:d=>ROUND[d],sl:.06},cyber:{g:d=>CYBER[d],sl:0}};
 
 // text block → polylines in local units; returns {polys,w}
+const LET={"A":[[[0,2],[0.2,1.2],[0.5,0],[0.8,1.2],[1,2]],[[0.2,1.2],[0.8,1.2]]],"B":[[[0,2],[0,1],[0,0],[0.7,0],[0.9,0.2],[0.9,0.8],[0.7,1],[0,1]],[[0.7,1],[1,1.2],[1,1.8],[0.8,2],[0,2]]],"C":[[[1,0.2],[0.8,0],[0.2,0],[0,0.2],[0,1.8],[0.2,2],[0.8,2],[1,1.8]]],"D":[[[0,0],[0.7,0],[1,0.3],[1,1.7],[0.7,2],[0,2],[0,0]]],"E":[[[1,0],[0,0],[0,1],[0,2],[1,2]],[[0,1],[0.7,1]]],"F":[[[1,0],[0,0],[0,1],[0,2]],[[0,1],[0.7,1]]],"G":[[[1,0.2],[0.8,0],[0.2,0],[0,0.2],[0,1.8],[0.2,2],[0.8,2],[1,1.8],[1,1.1],[0.5,1.1]]],"H":[[[0,0],[0,1],[0,2]],[[1,0],[1,1],[1,2]],[[0,1],[1,1]]],"I":[[[0.2,0],[0.5,0],[0.8,0]],[[0.5,0],[0.5,2]],[[0.2,2],[0.5,2],[0.8,2]]],"J":[[[1,0],[1,1.8],[0.8,2],[0.2,2],[0,1.8],[0,1.5]]],"K":[[[0,0],[0,1],[0,2]],[[1,0],[0,1],[1,2]]],"L":[[[0,0],[0,2],[1,2]]],"M":[[[0,2],[0,0],[0.5,1],[1,0],[1,2]]],"N":[[[0,2],[0,0],[1,2],[1,0]]],"O":[[[0.2,0],[0.8,0],[1,0.2],[1,1.8],[0.8,2],[0.2,2],[0,1.8],[0,0.2],[0.2,0]]],"P":[[[0,2],[0,1],[0,0],[0.8,0],[1,0.2],[1,0.8],[0.8,1],[0.5,1],[0,1]]],"Q":[[[0.2,0],[0.8,0],[1,0.2],[1,1.8],[0.8,2],[0.2,2],[0,1.8],[0,0.2],[0.2,0]],[[0.5,1.5],[0.8,2]]],"R":[[[0,2],[0,1],[0,0],[0.8,0],[1,0.2],[1,0.8],[0.8,1],[0.5,1],[0,1]],[[0.5,1],[1,2]]],"S":[[[1,0.2],[0.8,0],[0.2,0],[0,0.2],[0,0.8],[0.2,1],[0.8,1],[1,1.2],[1,1.8],[0.8,2],[0.2,2],[0,1.8]]],"T":[[[0,0],[0.5,0],[1,0]],[[0.5,0],[0.5,2]]],"U":[[[0,0],[0,1.8],[0.2,2],[0.8,2],[1,1.8],[1,0]]],"V":[[[0,0],[0.5,2],[1,0]]],"W":[[[0,0],[0.25,2],[0.5,1],[0.75,2],[1,0]]],"X":[[[0,0],[0.5,1],[1,2]],[[1,0],[0.5,1],[0,2]]],"Y":[[[0,0],[0.5,1],[1,0]],[[0.5,1],[0.5,2]]],"Z":[[[0,0],[1,0],[0,2],[1,2]]],"-":[[[0.2,1],[0.8,1]]],".":[[[0.5,2],[0.4,1.85],[0.5,1.7],[0.6,1.85],[0.5,2]]],"/":[[[0,2],[1,0]]],"!":[[[0.5,0],[0.5,1.4]],[[0.5,2],[0.4,1.85],[0.5,1.7],[0.6,1.85],[0.5,2]]],"+":[[[0.5,0.5],[0.5,1],[0.5,1.5]],[[0,1],[0.5,1],[1,1]]],"?":[[[0,0.3],[0.3,0],[0.7,0],[1,0.3],[1,0.6],[0.5,1],[0.5,1.4]],[[0.5,2],[0.4,1.85],[0.5,1.7],[0.6,1.85],[0.5,2]]]};
 function textBlock(str,font,rail){
   const F=FONTS[font],polys=[];let x=0;const gap=.45;
   for(const ch of str){
@@ -191,7 +193,9 @@ function textBlock(str,font,rail){
       if(rail)polys.push([[c,2],[c-.1,1.78],[c,1.56],[c+.1,1.78],[c,2]]);
       else polys.push([[c,.5],[c+.08,.6],[c,.7],[c-.08,.6],[c,.5]],[[c,1.3],[c+.08,1.4],[c,1.5],[c-.08,1.4],[c,1.3]]);
       x+=.3+gap;continue}
-    for(const p of F.g(+ch))polys.push(p.map(([a,b])=>[x+a+(2-b)*F.sl,b]));
+    if(ch===" "){x+=.6;continue}
+    const gl=/[0-9]/.test(ch)?F.g(+ch):LET[ch.toUpperCase()];if(!gl){x+=.6;continue}
+    for(const p of gl)polys.push(p.map(([a,b])=>[x+a+(2-b)*F.sl,b]));
     x+=1+gap;
   }
   const w=x-gap;
@@ -242,10 +246,15 @@ function buildClock(){
   let polys=[];
   if(S.form==="hm"||S.form==="hms"){
     const {polys:t,w}=textBlock(S.form==="hm"?p2(hh)+":"+p2(m):p2(hh)+":"+p2(m)+":"+p2(s),S.font,S.rail);
-    const sc=1.9/Math.max(w+.4,2*2.2);polys=place(t,-w/2*sc,-1*sc,sc);
+    const txt=(S.txt||"").trim();
+    if(!txt){const sc=1.9/Math.max(w+.4,2*2.2);polys=place(t,-w/2*sc,-1*sc,sc)}
+    else{const T=textBlock(txt,S.font,S.rail),k=Math.min(.6,w/Math.max(T.w,.01));const H=2.6+2*k,W2=Math.max(w,T.w*k);
+      const sc=1.9/Math.max(W2+.4,H*1.15),oy=-H/2*sc;polys=[...place(t,-w/2*sc,oy,sc),...place(T.polys,-T.w*k/2*sc,oy+2.6*sc,k*sc)]}
   }else{
     polys=analog(h,m,s);
     if(S.form==="hybrid"){const {polys:t,w}=textBlock(p2(hh)+":"+p2(m),S.font,S.rail);const sc=.62/w;polys.push(...place(t,-w/2*sc,.28,sc))}
+    const txt=(S.txt||"").trim();
+    if(txt){const T=textBlock(txt,S.font,S.rail),k=Math.min(.085,.9/Math.max(T.w,.01));polys.push(...place(T.polys,-T.w*k/2,-.62,k))}
     polys=polys.map(p=>p.map(([a,b])=>[a*.95,b*.95]));
   }
   return tour(polys);
@@ -390,6 +399,7 @@ const R3keys=["ax","ay","az","sx","sy","sz","pp"];
 ["amp","rate","ax","ay","az","sx","sy","sz","pp","dp","glow","decay"].forEach(id=>{const el=$(id),b=el.parentElement.querySelector("b");
   const show=()=>b.textContent=(fmt[id]||(v=>v+"°"))(S[id]);el.value=S[id];show();
   el.oninput=()=>{S[id]=+el.value;show();save();if(id==="amp")applyAudio();if(R3keys.includes(id))sendR();if(id==="rate"||id==="dp")push(true)}});
+$("txt").value=S.txt;$("txt").oninput=e=>{S.txt=e.target.value;save();push(true)};
 ["h12","rail","swap","invX","invY","auto"].forEach(id=>{const el=$(id);el.checked=S[id];el.onchange=()=>{S[id]=el.checked;save();sendR();push(true)}});
 $("resetAll").onclick=()=>{const keep=["sink","chX","chY","sr","lat","amp","auto","mute"];
   Object.keys(DEF).forEach(k=>{if(!keep.includes(k))S[k]=DEF[k]});save();location.reload()};
