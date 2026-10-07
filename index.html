@@ -1,6 +1,7 @@
 <!doctype html><html lang="zh-Hant"><head><meta charset="utf-8">
 <title>Tone God OSC Clock</title>
 <meta name="description" content="用聲卡送出 X‑Y 訊號，讓實體示波器畫出時鐘。">
+<link rel="icon" href="assets/tonegod-logo.png">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -56,9 +57,11 @@ dialog::backdrop{background:#000a}
 .dg{display:grid;grid-template-columns:110px 1fr;gap:8px 12px;align-items:center;font-size:12px}.dg label{color:var(--dim)}
 #testRow button{padding:5px 8px;font-size:12px}
 #devInfo{margin:0 0 10px;font:11.5px/1.6 "Share Tech Mono",monospace;color:var(--cy);background:#05040b;border:1px solid var(--line);padding:8px 10px;white-space:pre-wrap}
+.brand-logo{display:block;width:40px;height:40px;object-fit:contain;flex-shrink:0;box-shadow:0 0 12px #00f0ff55}
 </style>
 
 <header>
+  <img class="brand-logo" src="assets/tonegod-logo.png" width="40" height="40" alt="痛神 Tone God">
   <h1>ToneGod-OscClock<small>X‑Y AUDIO CLOCK</small></h1>
   <span class="chip" id="st">STANDBY</span>
   <span class="chip hide-mini" id="info">— kHz</span>
