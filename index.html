@@ -85,6 +85,7 @@ dialog::backdrop{background:#000a}
       <div class="note" id="audioSum" style="margin-top:6px">尚未設定：按 AUDIO SETUP 選擇聲卡與輸出通道</div>
       <div class="sl">AMP<input id="amp" type="range" min="0" max="1" step=".01"><b id="ampV"></b></div>
       <div class="sl">REFRESH<input id="rate" type="range" min="10" max="120" step="1"><b id="rateV"></b></div>
+      <div class="sl" title="補償聲卡輸出的隔直流電容：筆畫越長的水平線越會下垂、整體歪斜時調高">AC COMP<input id="ac" type="range" min="0" max="20" step=".1"><b></b></div>
       <label class="chk"><input type="checkbox" id="auto">開啟時自動送出訊號</label>
     </div>
 
@@ -146,7 +147,7 @@ dialog::backdrop{background:#000a}
 <script>
 const $=id=>document.getElementById(id);
 // ================= settings =================
-const DEF={form:"hm",font:"seg",h12:false,rail:true,amp:.5,rate:30,auto:false,ax:0,ay:0,az:0,sx:0,sy:0,sz:0,pp:.3,dp:0,col:"#39ff88",glow:10,decay:.3,swap:false,invX:false,invY:false,sink:"",chX:0,chY:1,sr:0,lat:"interactive",mute:false,mini:false,txt:""};
+const DEF={form:"hm",font:"seg",h12:false,rail:true,amp:.5,rate:30,auto:false,ax:0,ay:0,az:0,sx:0,sy:0,sz:0,pp:.3,dp:0,col:"#39ff88",glow:10,decay:.3,swap:false,invX:false,invY:false,sink:"",chX:0,chY:1,sr:0,lat:"interactive",mute:false,mini:false,txt:"",ac:0};
 let S={...DEF};try{Object.assign(S,JSON.parse(localStorage.getItem("oscchrono")||"{}"))}catch(e){}
 const save=()=>{try{localStorage.setItem("oscchrono",JSON.stringify(S))}catch(e){}};
 
@@ -306,7 +307,7 @@ const workletSrc=XFORM+`
 class XY extends AudioWorkletProcessor{constructor(){super();this.b=new Float32Array(3);this.n=null;this.i=0;this.t=0;this.R={ax:0,ay:0,az:0,sx:0,sy:0,sz:0,pp:0};this.o=[0,0];
 this.port.onmessage=e=>{if(e.data.buf)this.n=e.data.buf;if(e.data.R)Object.assign(this.R,e.data.R)}}
 process(_,out){const L=out[0][0],Rr=out[0][1],dt=1/sampleRate,b=this.b;for(let s=0;s<L.length;s++){if(this.i>=this.b.length){this.i=0;if(this.n){this.b=this.n;this.n=null}}
-xf(this.b[this.i],this.b[this.i+1],this.b[this.i+2],this.R,this.t,this.o);L[s]=this.o[0];Rr[s]=this.o[1];this.i+=3;this.t+=dt}return true}}registerProcessor('xy',XY)`;
+xf(this.b[this.i],this.b[this.i+1],this.b[this.i+2],this.R,this.t,this.o);{const o=this.o,R=this.R;let IX=this.ix||0,IY=this.iy||0;if(R.ac>0){const wc=2*Math.PI*R.ac;IX=IX*.99997+o[0]*dt;IY=IY*.99997+o[1]*dt;o[0]=Math.max(-1,Math.min(1,o[0]+wc*IX));o[1]=Math.max(-1,Math.min(1,o[1]+wc*IY))}this.ix=IX;this.iy=IY}L[s]=this.o[0];Rr[s]=this.o[1];this.i+=3;this.t+=dt}return true}}registerProcessor('xy',XY)`;
 let ac,node,amp,out,anL,anR,spl,merger,lastKey="",cur=null;
 let engine="";
 async function makeCtx(){
@@ -322,7 +323,7 @@ async function start(){
     const sp=ac.createScriptProcessor(1024,0,2),G={b:new Float32Array(3),n:null,i:0,t:0,R:R3(),o:[0,0]};
     sp.port={postMessage:d=>{if(d.buf)G.n=d.buf;if(d.R)G.R=d.R}};
     sp.onaudioprocess=ev=>{const L=ev.outputBuffer.getChannelData(0),Rr=ev.outputBuffer.getChannelData(1),dt=1/ac.sampleRate;
-      for(let s=0;s<L.length;s++){if(G.i>=G.b.length){G.i=0;if(G.n){G.b=G.n;G.n=null}}xf(G.b[G.i],G.b[G.i+1],G.b[G.i+2],G.R,G.t,G.o);L[s]=G.o[0];Rr[s]=G.o[1];G.i+=3;G.t+=dt}};
+      for(let s=0;s<L.length;s++){if(G.i>=G.b.length){G.i=0;if(G.n){G.b=G.n;G.n=null}}xf(G.b[G.i],G.b[G.i+1],G.b[G.i+2],G.R,G.t,G.o);{const o=G.o,R=G.R;let IX=G.ix||0,IY=G.iy||0;if(R.ac>0){const wc=2*Math.PI*R.ac;IX=IX*.99997+o[0]*dt;IY=IY*.99997+o[1]*dt;o[0]=Math.max(-1,Math.min(1,o[0]+wc*IX));o[1]=Math.max(-1,Math.min(1,o[1]+wc*IY))}G.ix=IX;G.iy=IY}L[s]=G.o[0];Rr[s]=G.o[1];G.i+=3;G.t+=dt}};
     node=sp;engine="ScriptProcessor (fallback)";}
   amp=ac.createGain();out=ac.createGain();spl=ac.createChannelSplitter(2);anL=ac.createAnalyser();anR=ac.createAnalyser();anL.fftSize=anR.fftSize=8192;
   node.connect(amp);amp.connect(spl);out.connect(ac.destination);
@@ -370,7 +371,7 @@ function route(){if(!ac)return;const d=ac.destination,n=Math.max(2,d.maxChannelC
   $("hudL").innerHTML=`OUT ${S.chX+1} ⟶ X<br>OUT ${S.chY+1} ⟶ Y<br>${n} CH DEVICE`;info()}
 navigator.mediaDevices&&navigator.mediaDevices.addEventListener&&navigator.mediaDevices.addEventListener("devicechange",listSinks);
 function applyAudio(){if(!ac)return;amp.gain.value=S.amp;out.gain.value=S.mute?0:1}
-const R3=()=>({ax:S.ax,ay:S.ay,az:S.az,sx:S.sx,sy:S.sy,sz:S.sz,pp:S.pp,swap:S.swap,invX:S.invX,invY:S.invY});
+const R3=()=>({ac:S.ac,ax:S.ax,ay:S.ay,az:S.az,sx:S.sx,sy:S.sy,sz:S.sz,pp:S.pp,swap:S.swap,invX:S.invX,invY:S.invY});
 function sendR(){if(node)node.port.postMessage({R:R3()})}
 function push(force){
   const d=new Date(),k=[S.form,S.font,S.h12,S.rail,S.rate,S.dp,d.getHours(),d.getMinutes(),(S.form==="hm"?0:d.getSeconds())].join();
@@ -416,9 +417,9 @@ fillCh(Math.max(2,S.chX+1,S.chY+1));listSinks();
 function seg(id,keyName){const el=$(id);const upd=()=>[...el.children].forEach(b=>b.classList.toggle("on",b.dataset.v===S[keyName]));
   el.onclick=e=>{if(!e.target.dataset.v)return;S[keyName]=e.target.dataset.v;upd();save();push(true)};upd()}
 seg("formSeg","form");seg("fontSeg","font");
-const fmt={amp:v=>Math.round(v*100)+"%",rate:v=>v+"Hz",pp:v=>(+v).toFixed(2),dp:v=>(+v).toFixed(2),glow:v=>v,decay:v=>(+v).toFixed(2)};
-const R3keys=["ax","ay","az","sx","sy","sz","pp"];
-["amp","rate","ax","ay","az","sx","sy","sz","pp","dp","glow","decay"].forEach(id=>{const el=$(id),b=el.parentElement.querySelector("b");
+const fmt={ac:v=>(+v).toFixed(1)+"Hz",amp:v=>Math.round(v*100)+"%",rate:v=>v+"Hz",pp:v=>(+v).toFixed(2),dp:v=>(+v).toFixed(2),glow:v=>v,decay:v=>(+v).toFixed(2)};
+const R3keys=["ac","ax","ay","az","sx","sy","sz","pp"];
+["ac","amp","rate","ax","ay","az","sx","sy","sz","pp","dp","glow","decay"].forEach(id=>{const el=$(id),b=el.parentElement.querySelector("b");
   const show=()=>b.textContent=(fmt[id]||(v=>v+"°"))(S[id]);el.value=S[id];show();
   el.oninput=()=>{S[id]=+el.value;show();save();if(id==="amp")applyAudio();if(R3keys.includes(id))sendR();if(id==="rate"||id==="dp")push(true)}});
 $("txt").value=S.txt;$("txt").oninput=e=>{S.txt=e.target.value;save();push(true)};
@@ -427,7 +428,7 @@ $("resetAll").onclick=()=>{const keep=["sink","chX","chY","sr","lat","amp","auto
   Object.keys(DEF).forEach(k=>{if(!keep.includes(k))S[k]=DEF[k]});save();location.reload()};
 // double-click any slider → its default
 ["amp","rate","ax","ay","az","sx","sy","sz","pp","dp","glow","decay"].forEach(id=>$(id).addEventListener("dblclick",()=>{$(id).value=DEF[id];$(id).oninput()}));
-$("z0").onclick=()=>{R3keys.concat("dp").forEach(k=>{S[k]=DEF[k];$(k).value=S[k];$(k).oninput()})};
+$("z0").onclick=()=>{R3keys.filter(k=>k!=="ac").concat("dp").forEach(k=>{S[k]=DEF[k];$(k).value=S[k];$(k).oninput()})};
 const COLS=["#ff2a1a","#39ff88","#00f0ff","#ff2bd6","#f9f002","#ff8a1f","#ffffff"];
 COLS.forEach(c=>{const b=document.createElement("button");b.className="sw";b.style.background=c;b.style.color=c;b.title=c;b.onclick=()=>{S.col=c;save();upd()};$("sws").append(b)});
 function upd(){[...$("sws").children].forEach(b=>b.classList.toggle("on",b.title===S.col))}upd();
