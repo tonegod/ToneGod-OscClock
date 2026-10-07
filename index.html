@@ -50,10 +50,16 @@ input[type=range]{width:100%;accent-color:var(--cy)}
 .sw.on{border-color:#fff;box-shadow:0 0 10px currentColor}
 .note{font-size:11.5px;line-height:1.6;color:var(--dim)}
 .note b{color:var(--ye);font-weight:normal}
+dialog{background:var(--panel);color:var(--tx);border:1px solid var(--cy);width:min(560px,calc(100vw - 32px));padding:16px 18px;box-shadow:0 0 30px #00f0ff44}
+dialog::backdrop{background:#000a}
+.dh{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.dh h3{margin:0;font:600 13px Orbitron,sans-serif;letter-spacing:.25em;color:var(--mg)}
+.dg{display:grid;grid-template-columns:110px 1fr;gap:8px 12px;align-items:center;font-size:12px}.dg label{color:var(--dim)}
+#testRow button{padding:5px 8px;font-size:12px}
+#devInfo{margin:0 0 10px;font:11.5px/1.6 "Share Tech Mono",monospace;color:var(--cy);background:#05040b;border:1px solid var(--line);padding:8px 10px;white-space:pre-wrap}
 </style>
 
 <header>
-  <h1>OSC//CHRONO<small>TONE GOD · X‑Y AUDIO CLOCK</small></h1>
+  <h1>ToneGod-OscClock<small>X‑Y AUDIO CLOCK</small></h1>
   <span class="chip" id="st">STANDBY</span>
   <span class="chip hide-mini" id="info">— kHz</span>
   <span class="sp"></span>
@@ -71,9 +77,8 @@ input[type=range]{width:100%;accent-color:var(--cy)}
   <aside>
     <div class="grp"><h3>SIGNAL</h3>
       <div class="row"><button class="big arm" id="start">▶ ARM</button><button id="mute" class="on" title="關閉後只在畫面預覽">OUT</button></div>
-      <div class="row" style="margin-top:8px"><select id="sink" style="flex:1;width:auto"><option value="">系統預設輸出</option></select><button id="scan" title="授權後列出所有聲卡">⟳ 掃描</button></div>
-      <div class="row" style="margin-top:6px;font-size:12px;color:var(--dim)">X →<select id="chX" style="flex:1;width:auto"></select>Y →<select id="chY" style="flex:1;width:auto"></select></div>
-      <div class="note" id="devNote" style="margin-top:4px"></div>
+      <div class="row" style="margin-top:8px"><button id="setupB" style="flex:1">⚙ AUDIO SETUP</button></div>
+      <div class="note" id="audioSum" style="margin-top:6px">尚未設定：按 AUDIO SETUP 選擇聲卡與輸出通道</div>
       <div class="sl">AMP<input id="amp" type="range" min="0" max="1" step=".01"><b id="ampV"></b></div>
       <div class="sl">REFRESH<input id="rate" type="range" min="10" max="120" step="1"><b id="rateV"></b></div>
       <label class="chk"><input type="checkbox" id="auto">開啟時自動送出訊號</label>
@@ -115,10 +120,28 @@ input[type=range]{width:100%;accent-color:var(--cy)}
   </aside>
 </main>
 
+<dialog id="setup">
+  <div class="dh"><h3>AUDIO SETUP</h3><button id="closeSetup" title="關閉">✕</button></div>
+  <div class="dg">
+    <label>Output device</label>
+    <div class="row"><select id="sink" style="flex:1;width:auto"><option value="">系統預設輸出</option></select><button id="scan" title="授權後列出所有聲卡">⟳ 掃描</button></div>
+    <label>Sample rate</label>
+    <select id="srSel"><option value="0">裝置預設</option><option>44100</option><option>48000</option><option>88200</option><option>96000</option><option>192000</option></select>
+    <label>Latency</label>
+    <select id="latSel"><option value="interactive">Low（interactive）</option><option value="balanced">Balanced</option><option value="playback">Safe（playback）</option></select>
+    <label>X → output</label><select id="chX"></select>
+    <label>Y → output</label><select id="chY"></select>
+    <label>Test</label><div><div class="row" id="testRow"></div><div class="note" style="margin-top:4px">按 OUT n 會在該輸出送 0.4 秒小聲的 1 kHz 嗶聲，用來確認哪個通道接到示波器的哪一軸。</div></div>
+  </div>
+  <div class="note" id="devNote" style="margin:10px 0"></div>
+  <pre id="devInfo"></pre>
+  <div class="row" style="justify-content:flex-end"><button id="applySetup" class="on">APPLY</button></div>
+</dialog>
+
 <script>
 const $=id=>document.getElementById(id);
 // ================= settings =================
-const DEF={form:"hm",font:"seg",h12:false,rail:true,amp:.5,rate:30,auto:false,ax:0,ay:0,az:0,sx:0,sy:0,sz:0,pp:.3,dp:0,col:"#39ff88",glow:10,decay:.3,swap:false,invX:false,invY:false,sink:"",chX:0,chY:1,mute:false,mini:false};
+const DEF={form:"hm",font:"seg",h12:false,rail:true,amp:.5,rate:30,auto:false,ax:0,ay:0,az:0,sx:0,sy:0,sz:0,pp:.3,dp:0,col:"#39ff88",glow:10,decay:.3,swap:false,invX:false,invY:false,sink:"",chX:0,chY:1,sr:0,lat:"interactive",mute:false,mini:false};
 let S={...DEF};try{Object.assign(S,JSON.parse(localStorage.getItem("oscchrono")||"{}"))}catch(e){}
 const save=()=>{try{localStorage.setItem("oscchrono",JSON.stringify(S))}catch(e){}};
 
@@ -250,8 +273,14 @@ this.port.onmessage=e=>{if(e.data.buf)this.n=e.data.buf;if(e.data.R)Object.assig
 process(_,out){const L=out[0][0],Rr=out[0][1],dt=1/sampleRate,b=this.b;for(let s=0;s<L.length;s++){if(this.i>=this.b.length){this.i=0;if(this.n){this.b=this.n;this.n=null}}
 xf(this.b[this.i],this.b[this.i+1],this.b[this.i+2],this.R,this.t,this.o);L[s]=this.o[0];Rr[s]=this.o[1];this.i+=3;this.t+=dt}return true}}registerProcessor('xy',XY)`;
 let ac,node,amp,out,anL,anR,spl,merger,lastKey="",cur=null;
+let engine="";
+async function makeCtx(){
+  const o={latencyHint:S.lat||"interactive"};if(+S.sr)o.sampleRate=+S.sr;
+  let c;try{c=new AudioContext(S.sink?{...o,sinkId:S.sink}:o)}catch(e){c=new AudioContext(o)}
+  if(S.sink&&c.setSinkId&&c.sinkId!==S.sink)try{await c.setSinkId(S.sink)}catch(e){$("devNote").textContent="無法切到所選裝置："+e.message}
+  return c}
 async function start(){
-  ac=new AudioContext({latencyHint:"interactive"});
+  ac=await makeCtx();engine="AudioWorklet";
   try{await ac.audioWorklet.addModule(URL.createObjectURL(new Blob([workletSrc],{type:"text/javascript"})));
     node=new AudioWorkletNode(ac,"xy",{numberOfInputs:0,outputChannelCount:[2]});
   }catch(e){ // fallback (e.g. file:// pages): ScriptProcessor running the same generator
@@ -259,12 +288,14 @@ async function start(){
     sp.port={postMessage:d=>{if(d.buf)G.n=d.buf;if(d.R)G.R=d.R}};
     sp.onaudioprocess=ev=>{const L=ev.outputBuffer.getChannelData(0),Rr=ev.outputBuffer.getChannelData(1),dt=1/ac.sampleRate;
       for(let s=0;s<L.length;s++){if(G.i>=G.b.length){G.i=0;if(G.n){G.b=G.n;G.n=null}}xf(G.b[G.i],G.b[G.i+1],G.b[G.i+2],G.R,G.t,G.o);L[s]=G.o[0];Rr[s]=G.o[1];G.i+=3;G.t+=dt}};
-    node=sp;}
+    node=sp;engine="ScriptProcessor (fallback)";}
   amp=ac.createGain();out=ac.createGain();spl=ac.createChannelSplitter(2);anL=ac.createAnalyser();anR=ac.createAnalyser();anL.fftSize=anR.fftSize=8192;
   node.connect(amp);amp.connect(spl);out.connect(ac.destination);
-  if(S.sink&&ac.setSinkId)try{await ac.setSinkId(S.sink)}catch(e){}
   route();applyAudio();sendR();push(true);listSinks();
 }
+async function restart(){const wasRunning=ac&&ac.state==="running";
+  if(ac){try{await ac.close()}catch(e){}}ac=null;node=null;merger=null;anL=anR=null;bl=br=null;
+  await start();if(!wasRunning&&!S.auto)await ac.suspend();setStatus();info()}
 // ---- device list & channel routing ----
 async function listSinks(){const sel=$("sink"),note=$("devNote");
   try{const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="audiooutput"&&d.deviceId!=="default"&&d.deviceId!=="");
@@ -280,13 +311,28 @@ async function scan(){const note=$("devNote");note.textContent="掃描中…";
   await listSinks();
   const all=await navigator.mediaDevices.enumerateDevices();note.textContent+=`（輸入 ${all.filter(d=>d.kind==="audioinput").length}／輸出 ${all.filter(d=>d.kind==="audiooutput").length}）`;
   if(ac)route()}
-function fillCh(n){["chX","chY"].forEach(id=>{const el=$(id);el.length=0;for(let i=0;i<n;i++)el.append(new Option("OUT "+(i+1),i));S[id]=Math.min(S[id],n-1);el.value=S[id]})}
+function fillCh(n){["chX","chY"].forEach(id=>{const el=$(id);el.length=0;for(let i=0;i<n;i++)el.append(new Option("OUT "+(i+1),i));S[id]=Math.min(S[id],n-1);el.value=S[id]});
+  const tr=$("testRow");tr.innerHTML="";for(let i=0;i<n;i++){const b=document.createElement("button");b.textContent="OUT "+(i+1);b.onclick=()=>beep(i);tr.append(b)}}
+async function beep(ch){if(!ac)await start();if(ac.state!=="running")await ac.resume();
+  const n=ac.destination.channelCount,m=ac.createChannelMerger(n),o=ac.createOscillator(),g=ac.createGain();o.frequency.value=1000;g.gain.value=.15;
+  o.connect(g);g.connect(m,0,ch);m.connect(ac.destination);o.start();o.stop(ac.currentTime+.4);o.onended=()=>{m.disconnect();setStatus()}}
+function devName(){const o=[...$("sink").options].find(o=>o.value===(S.sink||""));return o?o.textContent:"系統預設輸出"}
+function info(){if(!ac){$("devInfo").textContent="Audio 尚未啟動（按 APPLY 或 ARM）";$("audioSum").textContent="尚未啟動 · "+devName();return}
+  const d=ac.destination;$("devInfo").textContent=
+`Device       ${devName()}
+Sample rate  ${ac.sampleRate} Hz
+Latency      base ${((ac.baseLatency||0)*1000).toFixed(1)} ms · output ${((ac.outputLatency||0)*1000).toFixed(1)} ms
+Channels     ${d.channelCount} active / ${d.maxChannelCount} max
+Routing      X → OUT ${S.chX+1}   Y → OUT ${S.chY+1}
+Engine       ${engine}
+State        ${ac.state}`;
+  $("audioSum").textContent=`${devName()} · ${(ac.sampleRate/1000).toFixed(1)}kHz · X→OUT${S.chX+1} Y→OUT${S.chY+1}`}
 function route(){if(!ac)return;const d=ac.destination,n=Math.max(2,d.maxChannelCount||2);
   try{d.channelCount=n;d.channelCountMode="explicit";d.channelInterpretation="discrete"}catch(e){}
   fillCh(n);spl.disconnect();if(merger)merger.disconnect();
   merger=ac.createChannelMerger(n);spl.connect(anL,0);spl.connect(anR,1);spl.connect(merger,0,S.chX);spl.connect(merger,1,S.chY);merger.connect(out);
   out.channelCount=n;out.channelCountMode="explicit";out.channelInterpretation="discrete";
-  $("hudL").innerHTML=`OUT ${S.chX+1} ⟶ X<br>OUT ${S.chY+1} ⟶ Y<br>${n} CH DEVICE`}
+  $("hudL").innerHTML=`OUT ${S.chX+1} ⟶ X<br>OUT ${S.chY+1} ⟶ Y<br>${n} CH DEVICE`;info()}
 navigator.mediaDevices&&navigator.mediaDevices.addEventListener&&navigator.mediaDevices.addEventListener("devicechange",listSinks);
 function applyAudio(){if(!ac)return;amp.gain.value=S.amp;out.gain.value=S.mute?0:1}
 const R3=()=>({ax:S.ax,ay:S.ay,az:S.az,sx:S.sx,sy:S.sy,sz:S.sz,pp:S.pp,swap:S.swap,invX:S.invX,invY:S.invY});
@@ -323,12 +369,14 @@ draw();
 
 // ================= UI wiring =================
 function setStatus(){const live=ac&&anL&&ac.state==="running";$("st").textContent=live?(S.mute?"PREVIEW ONLY":"TRANSMITTING"):"STANDBY";$("st").classList.toggle("live",!!live);
-  $("start").textContent=live?"■ HALT":"▶ ARM";$("start").classList.toggle("arm",!live);$("mute").classList.toggle("on",!S.mute)}
+  $("start").textContent=live?"■ HALT":"▶ ARM";info();$("start").classList.toggle("arm",!live);$("mute").classList.toggle("on",!S.mute)}
 async function toggle(){if(!ac)await start();else if(ac.state==="running")await ac.suspend();else await ac.resume();setStatus()}
 $("start").onclick=toggle;
 $("mute").onclick=()=>{S.mute=!S.mute;applyAudio();setStatus();save()};
-$("sink").onchange=async e=>{S.sink=e.target.value;save();if(ac&&ac.setSinkId)try{await ac.setSinkId(S.sink);route()}catch(err){$("devNote").textContent="切換失敗："+err.message}};
 $("scan").onclick=scan;["chX","chY"].forEach(id=>$(id).onchange=e=>{S[id]=+e.target.value;save();route()});
+$("setupB").onclick=()=>{$("srSel").value=String(S.sr||0);$("latSel").value=S.lat;$("sink").value=S.sink;info();listSinks();$("setup").showModal()};
+$("closeSetup").onclick=()=>$("setup").close();
+$("applySetup").onclick=async()=>{S.sink=$("sink").value;S.sr=+$("srSel").value;S.lat=$("latSel").value;save();$("devNote").textContent="套用中…";await restart();$("devNote").textContent="已套用";};
 fillCh(Math.max(2,S.chX+1,S.chY+1));listSinks();
 function seg(id,keyName){const el=$(id);const upd=()=>[...el.children].forEach(b=>b.classList.toggle("on",b.dataset.v===S[keyName]));
   el.onclick=e=>{if(!e.target.dataset.v)return;S[keyName]=e.target.dataset.v;upd();save();push(true)};upd()}
