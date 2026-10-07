@@ -93,7 +93,7 @@ dialog::backdrop{background:#000a}
         <button data-v="hm">時:分</button><button data-v="hms">時:分:秒</button><button data-v="analog">指針</button><button data-v="hybrid">指針＋數字</button>
       </div>
       <div class="row" style="margin-top:6px"><label class="chk"><input type="checkbox" id="h12">12 小時制</label><label class="chk"><input type="checkbox" id="rail">底線連續路徑</label></div>
-      <input id="txt" maxlength="24" placeholder="自訂文字（英文、數字、- . / ! + ?）" style="margin-top:8px;width:100%;font:inherit;font-size:13px;color:var(--tx);background:#14112a;border:1px solid var(--line);padding:7px 10px">
+      <input id="txt" maxlength="24" placeholder="自訂文字（中英文、數字、- . / ! + ?）" style="margin-top:8px;width:100%;font:inherit;font-size:13px;color:var(--tx);background:#14112a;border:1px solid var(--line);padding:7px 10px">
     </div>
 
     <div class="grp"><h3>TYPEFACE</h3>
@@ -185,6 +185,27 @@ const FONTS={led:{g:ledGlyph,sl:.1},matrix:{g:mxGlyph,sl:0},seg:{g:segGlyph,sl:0
 
 // text block → polylines in local units; returns {polys,w}
 const LET={"A":[[[0,2],[0.2,1.2],[0.5,0],[0.8,1.2],[1,2]],[[0.2,1.2],[0.8,1.2]]],"B":[[[0,2],[0,1],[0,0],[0.7,0],[0.9,0.2],[0.9,0.8],[0.7,1],[0,1]],[[0.7,1],[1,1.2],[1,1.8],[0.8,2],[0,2]]],"C":[[[1,0.2],[0.8,0],[0.2,0],[0,0.2],[0,1.8],[0.2,2],[0.8,2],[1,1.8]]],"D":[[[0,0],[0.7,0],[1,0.3],[1,1.7],[0.7,2],[0,2],[0,0]]],"E":[[[1,0],[0,0],[0,1],[0,2],[1,2]],[[0,1],[0.7,1]]],"F":[[[1,0],[0,0],[0,1],[0,2]],[[0,1],[0.7,1]]],"G":[[[1,0.2],[0.8,0],[0.2,0],[0,0.2],[0,1.8],[0.2,2],[0.8,2],[1,1.8],[1,1.1],[0.5,1.1]]],"H":[[[0,0],[0,1],[0,2]],[[1,0],[1,1],[1,2]],[[0,1],[1,1]]],"I":[[[0.2,0],[0.5,0],[0.8,0]],[[0.5,0],[0.5,2]],[[0.2,2],[0.5,2],[0.8,2]]],"J":[[[1,0],[1,1.8],[0.8,2],[0.2,2],[0,1.8],[0,1.5]]],"K":[[[0,0],[0,1],[0,2]],[[1,0],[0,1],[1,2]]],"L":[[[0,0],[0,2],[1,2]]],"M":[[[0,2],[0,0],[0.5,1],[1,0],[1,2]]],"N":[[[0,2],[0,0],[1,2],[1,0]]],"O":[[[0.2,0],[0.8,0],[1,0.2],[1,1.8],[0.8,2],[0.2,2],[0,1.8],[0,0.2],[0.2,0]]],"P":[[[0,2],[0,1],[0,0],[0.8,0],[1,0.2],[1,0.8],[0.8,1],[0.5,1],[0,1]]],"Q":[[[0.2,0],[0.8,0],[1,0.2],[1,1.8],[0.8,2],[0.2,2],[0,1.8],[0,0.2],[0.2,0]],[[0.5,1.5],[0.8,2]]],"R":[[[0,2],[0,1],[0,0],[0.8,0],[1,0.2],[1,0.8],[0.8,1],[0.5,1],[0,1]],[[0.5,1],[1,2]]],"S":[[[1,0.2],[0.8,0],[0.2,0],[0,0.2],[0,0.8],[0.2,1],[0.8,1],[1,1.2],[1,1.8],[0.8,2],[0.2,2],[0,1.8]]],"T":[[[0,0],[0.5,0],[1,0]],[[0.5,0],[0.5,2]]],"U":[[[0,0],[0,1.8],[0.2,2],[0.8,2],[1,1.8],[1,0]]],"V":[[[0,0],[0.5,2],[1,0]]],"W":[[[0,0],[0.25,2],[0.5,1],[0.75,2],[1,0]]],"X":[[[0,0],[0.5,1],[1,2]],[[1,0],[0.5,1],[0,2]]],"Y":[[[0,0],[0.5,1],[1,0]],[[0.5,1],[0.5,2]]],"Z":[[[0,0],[1,0],[0,2],[1,2]]],"-":[[[0.2,1],[0.8,1]]],".":[[[0.5,2],[0.4,1.85],[0.5,1.7],[0.6,1.85],[0.5,2]]],"/":[[[0,2],[1,0]]],"!":[[[0.5,0],[0.5,1.4]],[[0.5,2],[0.4,1.85],[0.5,1.7],[0.6,1.85],[0.5,2]]],"+":[[[0.5,0.5],[0.5,1],[0.5,1.5]],[[0,1],[0.5,1],[1,1]]],"?":[[[0,0.3],[0.3,0],[0.7,0],[1,0.3],[1,0.6],[0.5,1],[0.5,1.4]],[[0.5,2],[0.4,1.85],[0.5,1.7],[0.6,1.85],[0.5,2]]]};
+// Chinese / any non-ASCII char: render with the system font, trace the outline (marching squares) into beam polylines
+const WIDE={};
+function wideGlyph(ch){if(WIDE[ch])return WIDE[ch];
+  const N=72,c=document.createElement("canvas");c.width=c.height=N+4;const x=c.getContext("2d");
+  x.fillStyle="#fff";x.font=`${N*.86}px "PingFang TC","Heiti TC","Noto Sans TC","Microsoft JhengHei",sans-serif`;x.textBaseline="alphabetic";
+  x.fillText(ch,2,2+N*.86);const d=x.getImageData(0,0,N+4,N+4).data,M=N+4,on=(i,j)=>i>=0&&j>=0&&i<M&&j<M&&d[(j*M+i)*4+3]>110;
+  const seg=new Map(),add=(a,b)=>{for(const[p,q]of[[a,b],[b,a]]){const k=p.join();(seg.get(k)||seg.set(k,[]).get(k)).push(q)}};
+  for(let j=-1;j<M;j++)for(let i=-1;i<M;i++){const c4=(on(i,j)?8:0)|(on(i+1,j)?4:0)|(on(i+1,j+1)?2:0)|(on(i,j+1)?1:0);
+    const T=[i*2+1,j*2],Rr=[i*2+2,j*2+1],B=[i*2+1,j*2+2],L=[i*2,j*2+1];
+    const tab={1:[[L,B]],2:[[B,Rr]],3:[[L,Rr]],4:[[T,Rr]],5:[[L,T],[B,Rr]],6:[[T,B]],7:[[L,T]],8:[[L,T]],9:[[T,B]],10:[[T,Rr],[L,B]],11:[[T,Rr]],12:[[L,Rr]],13:[[B,Rr]],14:[[L,B]]}[c4];
+    if(tab)for(const[a,b]of tab)add(a,b)}
+  const used=new Set(),loops=[];
+  for(const k of seg.keys()){if(used.has(k))continue;let cur=k,loop=[];
+    while(cur&&!used.has(cur)){used.add(cur);const [px,py]=cur.split(",").map(Number);loop.push([px/2,py/2]);cur=(seg.get(cur)||[]).map(q=>q.join()).find(q=>!used.has(q))}
+    if(loop.length>6){loop.push(loop[0]);loops.push(loop)}}
+  const rdp=(pts,e)=>{if(pts.length<3)return pts;let m=0,id=0;const[a,b]=[pts[0],pts[pts.length-1]],dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy)||1;
+    for(let i=1;i<pts.length-1;i++){const dd=Math.abs(dy*pts[i][0]-dx*pts[i][1]+b[0]*a[1]-b[1]*a[0])/L;if(dd>m){m=dd;id=i}}
+    return m>e?[...rdp(pts.slice(0,id+1),e).slice(0,-1),...rdp(pts.slice(id),e)]:[a,b]};
+  const k=2/(N*.86);let minX=1e9,maxX=-1e9;
+  const polys=loops.map(l=>{const h=l.length>>1,s2=[...rdp(l.slice(0,h+1),.7).slice(0,-1),...rdp(l.slice(h),.7)];return s2.map(([u,v])=>{const X=(u-2)*k;minX=Math.min(minX,X);maxX=Math.max(maxX,X);return[X,(v-2)*k]})});
+  const out={polys:polys.map(p=>p.map(([a,b])=>[a-minX,b])),adv:Math.max(.6,maxX-minX)};return WIDE[ch]=out}
 function textBlock(str,font,rail){
   const F=FONTS[font],polys=[];let x=0;const gap=.45;
   for(const ch of str){
@@ -194,6 +215,7 @@ function textBlock(str,font,rail){
       else polys.push([[c,.5],[c+.08,.6],[c,.7],[c-.08,.6],[c,.5]],[[c,1.3],[c+.08,1.4],[c,1.5],[c-.08,1.4],[c,1.3]]);
       x+=.3+gap;continue}
     if(ch===" "){x+=.6;continue}
+    if(ch.codePointAt(0)>127){const W=wideGlyph(ch);if(!W.polys.length){x+=.6;continue}for(const p of W.polys)polys.push(p.map(([a,b])=>[x+a,b]));x+=W.adv+gap;continue}
     const gl=/[0-9]/.test(ch)?F.g(+ch):LET[ch.toUpperCase()];if(!gl){x+=.6;continue}
     for(const p of gl)polys.push(p.map(([a,b])=>[x+a+(2-b)*F.sl,b]));
     x+=1+gap;
