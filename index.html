@@ -360,8 +360,8 @@ function draw(){
   const s=Math.min(W,H)*.47,cx=W/2,cy=H/2,live=ac&&anL&&ac.state==="running";
   ctx.globalCompositeOperation="lighter";ctx.strokeStyle=S.col;ctx.fillStyle=S.col;ctx.shadowColor=S.col;ctx.shadowBlur=S.glow;ctx.lineWidth=1.6;ctx.lineJoin="round";
   if(live){bl=bl||new Float32Array(anL.fftSize);br=br||new Float32Array(anR.fftSize);anL.getFloatTimeDomainData(bl);anR.getFloatTimeDomainData(br);
-    const g=S.amp||1;ctx.beginPath();for(let i=0;i<bl.length;i++){const x=cx+bl[i]/g*s,y=cy-br[i]/g*s;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke();
-  }else if(cur){const t=(performance.now()-t0)/1000,R=R3();ctx.beginPath();for(let i=0;i<cur.length;i+=3){xf(cur[i],cur[i+1],cur[i+2],R,t,o);const x=cx+o[0]*s,y=cy-o[1]*s;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.closePath();ctx.stroke()}
+    ctx.beginPath();for(let i=0;i<bl.length;i++){const x=cx+bl[i]*s,y=cy-br[i]*s;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke();
+  }else if(cur){const t=(performance.now()-t0)/1000,R=R3();ctx.beginPath();for(let i=0;i<cur.length;i+=3){xf(cur[i],cur[i+1],cur[i+2],R,t,o);const x=cx+o[0]*S.amp*s,y=cy-o[1]*S.amp*s;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.closePath();ctx.stroke()}
   ctx.shadowBlur=0;ctx.globalCompositeOperation="source-over";
   const d=new Date();$("hudR").innerHTML=`${d.toLocaleDateString("zh-TW")}<br>${d.toLocaleTimeString("zh-TW",{hour12:false})}`;
   requestAnimationFrame(draw);
