@@ -2,6 +2,10 @@
 
 瀏覽器版示波器時鐘：用聲卡送出立體聲 X‑Y 訊號（L = X、R = Y），讓實體示波器在 X‑Y 模式畫出時鐘。HTML、CSS 與 JavaScript 內嵌於 `index.html`，無外部套件或建置步驟（Google Fonts 載入失敗時會改用系統字型）。
 
+## 線上使用
+
+https://tonegod.github.io/ToneGod-OscClock/
+
 ## 本機使用
 
 ```sh
