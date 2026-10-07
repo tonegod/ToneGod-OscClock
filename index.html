@@ -117,7 +117,7 @@ dialog::backdrop{background:#000a}
       <div class="row" id="sws"></div>
       <div class="sl">GLOW<input id="glow" type="range" min="0" max="30" step="1"><b></b></div>
       <div class="sl">DECAY<input id="decay" type="range" min=".05" max=".9" step=".01"><b></b></div>
-      <div class="row"><label class="chk"><input type="checkbox" id="swap">交換 L/R</label><label class="chk"><input type="checkbox" id="invX">反轉 X</label><label class="chk"><input type="checkbox" id="invY">反轉 Y</label></div>
+      <div class="row"><label class="chk" title="只改輸出，預覽不變"><input type="checkbox" id="swap">交換 L/R（輸出）</label><label class="chk"><input type="checkbox" id="invX">反轉 X</label><label class="chk"><input type="checkbox" id="invY">反轉 Y</label></div>
     </div>
 
     <div class="note">聲卡 <b>L→CH1(X)</b>、<b>R→CH2(Y)</b>，示波器切 X‑Y。先調低音量，<b>不要接喇叭／耳機</b>。DEPTH 會把字做成有厚度的立體字（路徑變長、亮度變暗）。滑桿雙擊回預設。快捷鍵：<b>H</b> 迷你模式、<b>F</b> 全螢幕、<b>空白</b> 啟動／暫停。</div>
@@ -363,8 +363,8 @@ function draw(){
   const s=Math.min(W,H)*.47,cx=W/2,cy=H/2,live=ac&&anL&&ac.state==="running";
   ctx.globalCompositeOperation="lighter";ctx.strokeStyle=S.col;ctx.fillStyle=S.col;ctx.shadowColor=S.col;ctx.shadowBlur=S.glow;ctx.lineWidth=1.6;ctx.lineJoin="round";
   if(live){bl=bl||new Float32Array(anL.fftSize);br=br||new Float32Array(anR.fftSize);anL.getFloatTimeDomainData(bl);anR.getFloatTimeDomainData(br);
-    ctx.beginPath();for(let i=0;i<bl.length;i++){const x=cx+bl[i]*s,y=cy-br[i]*s;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke();
-  }else if(cur){const t=(performance.now()-t0)/1000,R=R3();ctx.beginPath();for(let i=0;i<cur.length;i+=3){xf(cur[i],cur[i+1],cur[i+2],R,t,o);const x=cx+o[0]*S.amp*s,y=cy-o[1]*S.amp*s;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.closePath();ctx.stroke()}
+    ctx.beginPath();for(let i=0;i<bl.length;i++){let u=bl[i],v=br[i];if(S.swap)[u,v]=[v,u];if(S.invX)u=-u;if(S.invY)v=-v;const x=cx+u*s,y=cy-v*s;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke();
+  }else if(cur){const t=(performance.now()-t0)/1000,R={...R3(),swap:false,invX:false,invY:false};ctx.beginPath();for(let i=0;i<cur.length;i+=3){xf(cur[i],cur[i+1],cur[i+2],R,t,o);const x=cx+o[0]*S.amp*s,y=cy-o[1]*S.amp*s;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.closePath();ctx.stroke()}
   ctx.shadowBlur=0;ctx.globalCompositeOperation="source-over";
   const d=new Date();$("hudR").innerHTML=`${d.toLocaleDateString("zh-TW")}<br>${d.toLocaleTimeString("zh-TW",{hour12:false})}`;
   requestAnimationFrame(draw);
