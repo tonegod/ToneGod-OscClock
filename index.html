@@ -63,6 +63,7 @@ dialog::backdrop{background:#000a}
   <span class="chip" id="st">STANDBY</span>
   <span class="chip hide-mini" id="info">— kHz</span>
   <span class="sp"></span>
+  <button id="resetAll" title="外觀、字體、3D、顯示全部回到預設（保留聲卡、路由與音量）">↺ RESET ALL</button>
   <button id="miniB" title="快捷鍵 H">▣ MINI</button>
   <button id="fsB" title="全螢幕">⛶</button>
 </header>
@@ -116,7 +117,7 @@ dialog::backdrop{background:#000a}
       <div class="row"><label class="chk"><input type="checkbox" id="swap">交換 L/R</label><label class="chk"><input type="checkbox" id="invX">反轉 X</label><label class="chk"><input type="checkbox" id="invY">反轉 Y</label></div>
     </div>
 
-    <div class="note">聲卡 <b>L→CH1(X)</b>、<b>R→CH2(Y)</b>，示波器切 X‑Y。先調低音量，<b>不要接喇叭／耳機</b>。DEPTH 會把字做成有厚度的立體字（路徑變長、亮度變暗）。快捷鍵：<b>H</b> 迷你模式、<b>F</b> 全螢幕、<b>空白</b> 啟動／暫停。</div>
+    <div class="note">聲卡 <b>L→CH1(X)</b>、<b>R→CH2(Y)</b>，示波器切 X‑Y。先調低音量，<b>不要接喇叭／耳機</b>。DEPTH 會把字做成有厚度的立體字（路徑變長、亮度變暗）。滑桿雙擊回預設。快捷鍵：<b>H</b> 迷你模式、<b>F</b> 全螢幕、<b>空白</b> 啟動／暫停。</div>
   </aside>
 </main>
 
@@ -387,6 +388,10 @@ const R3keys=["ax","ay","az","sx","sy","sz","pp"];
   const show=()=>b.textContent=(fmt[id]||(v=>v+"°"))(S[id]);el.value=S[id];show();
   el.oninput=()=>{S[id]=+el.value;show();save();if(id==="amp")applyAudio();if(R3keys.includes(id))sendR();if(id==="rate"||id==="dp")push(true)}});
 ["h12","rail","swap","invX","invY","auto"].forEach(id=>{const el=$(id);el.checked=S[id];el.onchange=()=>{S[id]=el.checked;save();sendR();push(true)}});
+$("resetAll").onclick=()=>{const keep=["sink","chX","chY","sr","lat","amp","auto","mute"];
+  Object.keys(DEF).forEach(k=>{if(!keep.includes(k))S[k]=DEF[k]});save();location.reload()};
+// double-click any slider → its default
+["amp","rate","ax","ay","az","sx","sy","sz","pp","dp","glow","decay"].forEach(id=>$(id).addEventListener("dblclick",()=>{$(id).value=DEF[id];$(id).oninput()}));
 $("z0").onclick=()=>{R3keys.concat("dp").forEach(k=>{S[k]=DEF[k];$(k).value=S[k];$(k).oninput()})};
 const COLS=["#ff2a1a","#39ff88","#00f0ff","#ff2bd6","#f9f002","#ff8a1f","#ffffff"];
 COLS.forEach(c=>{const b=document.createElement("button");b.className="sw";b.style.background=c;b.style.color=c;b.title=c;b.onclick=()=>{S.col=c;save();upd()};$("sws").append(b)});
